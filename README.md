@@ -1,3 +1,5 @@
+extract the data file into this folder, so that this folder has `TrainVal` folder
+
 install dependencies with 
 ```bash
 pip install -r requirements.txt
