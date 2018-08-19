@@ -4,10 +4,16 @@ import math
 import random
 import shutil
 import Augmentor
+import imgaug
+from Augmentor.Operations import Operation
+from imgaug import augmenters as iaa
+import numpy as np
 
 """
 Helper function definitions
 """
+
+TEST_MODE = True
 
 
 def perceived_brightness(im_file):
@@ -23,6 +29,24 @@ def perceived_brightness(im_file):
         return math.sqrt(0.241 * (r ** 2) + 0.691 * (g ** 2) + 0.068 * (b ** 2))
     except Exception as e:
         return 128
+
+
+class GaussianBlurOperation(Operation):
+    def __init__(self, probability, magnitude=3.0):
+        self.probability = probability
+        self.blurer = iaa.GaussianBlur(magnitude)
+
+    def perform_operation(self, images):
+        return_images = []
+        for image in images:
+            image_array = np.array(image).astype('uint8')
+            if random.random() < self.probability:
+                processed_image = image_array
+            else:
+                self.blurer.augment_image(image_array)
+            processed_image = Image.fromarray(image_array)
+            return_images.append(processed_image)
+        return return_images
 
 
 """
@@ -49,8 +73,12 @@ sorted_classes = sorted(class_numbers, key=lambda x: x[1])
 min_class_label, min_class_num = sorted_classes[0]
 max_class_label, max_class_num = sorted_classes[-1]
 
-test_target_class_num = 1
-target_class_num = 1200  # TODO: change this to 10k later
+if TEST_MODE:
+    target_class_num = 3000  # TODO: change this to 10k later
+    test_target_class_num = 2
+else:
+    target_class_num = 10000
+    test_target_class_num = len(classes)
 
 # take out random images of train set to be the validation set
 validation_set_size_per_class = 7
@@ -64,8 +92,10 @@ for c in classes[:test_target_class_num]:
     for vf in validation_files:
         src_file = os.path.join(original_path, c, vf)
         target_file = os.path.join(validation_class_path, vf)
-        # TODO: change to shutil.move later
-        shutil.copy(src_file, target_file)
+        if TEST_MODE:
+            shutil.copy(src_file, target_file)
+        else:
+            shutil.move(src_file, target_file)
 
 for c in classes[:test_target_class_num]:
     print('processing class {}'.format(c))
@@ -74,10 +104,11 @@ for c in classes[:test_target_class_num]:
     target_class_num = target_class_num - class_num - validation_set_size_per_class
     print("target output file = {}".format(target_class_num))
     class_path = os.path.join(original_path, c)
-    class_output_path = os.path.join('../../', output_path, c)
-    p = Augmentor.Pipeline(class_path, output_directory=class_output_path)
+    print("class path = {}".format(class_path))
+    p = Augmentor.Pipeline(class_path)
     p.skew_tilt(probability=0.5, magnitude=0.2)
-    p.random_brightness(probability=0.5, min_factor=0.2, max_factor=0.8)
+    p.random_brightness(probability=0.5, min_factor=0.4, max_factor=0.6)
     p.random_erasing(probability=0.5, rectangle_area=0.15)
-    p.random_distortion(probability=0.5, grid_width=300, grid_height=300, magnitude=4)
+    # p.random_distortion(probability=0.5, grid_width=400, grid_height=400, magnitude=1)
+    p.add_operation(GaussianBlurOperation(probability=0.5, magnitude=4))
     p.sample(target_class_num)
