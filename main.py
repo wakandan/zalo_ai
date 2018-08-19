@@ -53,9 +53,9 @@ class GaussianBlurOperation(Operation):
 Main code
 """
 
-original_path = './TrainVal'
-output_path = './TrainVal_output'
-validation_path = './TrainVal_validation'
+original_path = os.path.abspath('./TrainVal')
+output_path = os.path.abspath('./TrainVal_output')
+validation_path = os.path.abspath('./TrainVal_validation')
 if not os.path.exists(output_path):
     os.mkdir(output_path)
 if not os.path.exists(validation_path):
@@ -105,10 +105,11 @@ for c in classes[:test_target_class_num]:
     print("target output file = {}".format(target_class_num))
     class_path = os.path.join(original_path, c)
     print("class path = {}".format(class_path))
-    p = Augmentor.Pipeline(class_path)
+    class_output_path = os.path.join(output_path, c)
+    print("class path output = {}".format(class_output_path))
+    p = Augmentor.Pipeline(class_path, output_directory=class_output_path)
     p.skew_tilt(probability=0.5, magnitude=0.2)
     p.random_brightness(probability=0.5, min_factor=0.4, max_factor=0.6)
     p.random_erasing(probability=0.5, rectangle_area=0.15)
-    # p.random_distortion(probability=0.5, grid_width=400, grid_height=400, magnitude=1)
     p.add_operation(GaussianBlurOperation(probability=0.5, magnitude=4))
     p.sample(target_class_num)
