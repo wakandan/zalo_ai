@@ -109,7 +109,10 @@ for c in classes[:test_target_class_num]:
     print("class path output = {}".format(class_output_path))
     p = Augmentor.Pipeline(class_path, output_directory=class_output_path)
     p.skew_tilt(probability=0.5, magnitude=0.2)
-    p.random_brightness(probability=0.5, min_factor=0.4, max_factor=0.6)
+    # change a bit here 
+    p.random_brightness(probability=1, min_factor=0.5, max_factor=1.5)
+    
+    # may be add multiple box
     p.random_erasing(probability=0.5, rectangle_area=0.15)
     p.add_operation(GaussianBlurOperation(probability=0.5, magnitude=4))
     p.sample(target_class_num)
