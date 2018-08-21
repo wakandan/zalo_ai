@@ -5,7 +5,7 @@ import random
 import shutil
 import Augmentor
 import imgaug
-from Augmentor.Operations import Operation
+from Augmentor.Operations import Operation, RandomErasing
 from imgaug import augmenters as iaa
 import numpy as np
 
@@ -47,6 +47,18 @@ class GaussianBlurOperation(Operation):
             processed_image = Image.fromarray(image_array)
             return_images.append(processed_image)
         return return_images
+
+
+class MultipleRandomErasing(RandomErasing):
+    def __init__(self, probability, rectangle_area, max_box=3):
+        super(MultipleRandomErasing, self).__init__(probability, rectangle_area)
+        self.max_box = max_box
+
+    def perform_operation(self, images):
+        new_images = images
+        for i in range(self.max_box):
+            new_images = super(MultipleRandomErasing, self).perform_operation(new_images)
+        return new_images
 
 
 """
@@ -111,8 +123,9 @@ for c in classes[:test_target_class_num]:
     p.skew_tilt(probability=0.5, magnitude=0.2)
     # change a bit here 
     p.random_brightness(probability=1, min_factor=0.5, max_factor=1.5)
-    
+
     # may be add multiple box
-    p.random_erasing(probability=0.5, rectangle_area=0.15)
+    # p.random_erasing(probability=0.5, rectangle_area=0.15)
+    p.add_operation(MultipleRandomErasing(probability=0.5, rectangle_area=0.15))
     p.add_operation(GaussianBlurOperation(probability=0.5, magnitude=4))
     p.sample(target_class_num)
